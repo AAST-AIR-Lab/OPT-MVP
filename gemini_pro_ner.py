@@ -1,7 +1,6 @@
 import google.generativeai as genai
 GOOGLE_API_KEY = "<Your Google API Key>"
 
-
 # basic functions for output accuracy measurement
 
 def compare_columns_with_missing_rows(text1, text2):
@@ -45,262 +44,202 @@ def compare_columns_with_missing_rows(text1, text2):
     }
 
 
+# The same comparison function but disregards any position
+
+def compare_columns_ignore_position(text1, text2):
+    # Function to extract rows from a string
+    def extract_rows(text):
+        return [line for line in text.strip().split('\n') if line.strip()]
+
+    # Get the rows for both texts
+    rows1 = extract_rows(text1)
+    rows2 = extract_rows(text2)
+
+    # Extract the last words from each row
+    last_words1 = {row.split()[-1] for row in rows1}
+    last_words2 = {row.split()[-1] for row in rows2}
+
+    # Find common last words
+    common_words = last_words1 & last_words2
+
+    # Calculate matches and total unique last words
+    matches = len(common_words)
+    total_unique_words = len(last_words1 | last_words2)
+
+    # Calculate match percentage
+    match_percentage = (matches / total_unique_words) * 100 if total_unique_words > 0 else 0
+
+    # Find missing last words
+    missing_in_text1 = last_words2 - last_words1
+    missing_in_text2 = last_words1 - last_words2
+
+    return {
+        "match_percentage": match_percentage,
+        "common_words": list(common_words),
+        "missing_in_text1": list(missing_in_text1),
+        "missing_in_text2": list(missing_in_text2),
+    }
+
+
+
+# a function to extract the first column  of the labeled text to make it easier to prompt the model without repeating the text with and without labels
+
+def extract_first_column(input_text):
+    """
+    Extracts the first column from the given text input.
+
+    Args:
+        input_text (str): Multiline string where each line contains columns separated by spaces.
+
+    Returns:
+        str: Multiline string containing only the first column of the input.
+    """
+    lines = input_text.strip().split("\n")  # Split input into lines
+    first_column = [line.split()[0] for line in lines]  # Extract the first column
+    return "\n".join(first_column)
+
+
 # A correctly labeled text taken directly from the hand made training data of the ML4OPT NER task used for accuracy measurement
 
-text1 = """Nova	_	_	O
-Network	_	_	O
+text1 = """An	_	_	O
+electronics	_	_	O
+store	_	_	O
 wants	_	_	O
 to	_	_	O
-design	_	_	O
-a	_	_	O
-plan	_	_	O
+optimize	_	_	O
+how	_	_	O
+many	_	_	O
+phones	_	_	B-VAR
+and	_	_	O
+laptops	_	_	B-VAR
+are	_	_	O
+enough	_	_	O
 to	_	_	O
-bid	_	_	O
-for	_	_	O
-the	_	_	O
-job	_	_	O
-of	_	_	O
-providing	_	_	O
-a	_	_	O
-computer	_	_	O
-network	_	_	O
-for	_	_	O
-city	_	_	O
-offices	_	_	O
-.	_	_	O
-It	_	_	O
-can	_	_	O
-build	_	_	O
-three	_	_	O
-types	_	_	O
-of	_	_	O
-layouts	_	_	O
-using	_	_	O
-workstations	_	_	O
-,	_	_	O
-servers	_	_	O
-,	_	_	O
-and	_	_	O
-switches	_	_	O
-.	_	_	O
-It	_	_	O
-has	_	_	B-CONST_DIR
-2000	_	_	B-LIMIT
-workstations	_	_	O
-,	_	_	O
-500	_	_	B-LIMIT
-servers	_	_	O
-,	_	_	O
-and	_	_	O
-300	_	_	B-LIMIT
-switches	_	_	O
+keep	_	_	O
+in	_	_	O
+inventory	_	_	O
 .	_	_	O
 A	_	_	O
-ring	_	_	B-VAR
-layout	_	_	I-VAR
-uses	_	_	O
-50	_	_	B-PARAM
-workstations	_	_	O
+phone	_	_	B-VAR
+will	_	_	O
+earn	_	_	O
+the	_	_	O
+store	_	_	O
+$	_	_	O
+120	_	_	B-PARAM
+in	_	_	O
+profits	_	_	B-OBJ_NAME
 ,	_	_	O
-20	_	_	B-PARAM
-servers	_	_	O
-,	_	_	O
-and	_	_	O
-10	_	_	B-PARAM
-switches	_	_	O
-;	_	_	O
-a	_	_	O
-tree	_	_	B-VAR
-layout	_	_	I-VAR
-uses	_	_	O
-30	_	_	B-PARAM
-workstations	_	_	O
-,	_	_	O
-15	_	_	B-PARAM
-servers	_	_	O
-,	_	_	O
-and	_	_	O
-7	_	_	B-PARAM
-switches	_	_	O
-;	_	_	O
 and	_	_	O
 a	_	_	O
-mesh	_	_	B-VAR
-layout	_	_	I-VAR
-uses	_	_	O
-100	_	_	B-PARAM
-workstations	_	_	O
+laptop	_	_	B-VAR
+will	_	_	O
+earn	_	_	O
+$	_	_	O
+40	_	_	B-PARAM
+.	_	_	O
+A	_	_	O
+phone	_	_	B-VAR
+requires	_	_	O
+1	_	_	B-PARAM
+sq	_	_	O
+ft	_	_	O
+of	_	_	O
+floor	_	_	O
+space	_	_	O
 ,	_	_	O
-50	_	_	B-PARAM
-servers	_	_	O
+whereas	_	_	O
+a	_	_	O
+laptop	_	_	B-VAR
+requires	_	_	O
+4	_	_	B-PARAM
+sq	_	_	O
+ft	_	_	O
+.	_	_	O
+In	_	_	O
+total	_	_	O
 ,	_	_	O
-and	_	_	O
-30	_	_	B-PARAM
-switches	_	_	O
+400	_	_	B-LIMIT
+sq	_	_	O
+ft	_	_	O
+of	_	_	O
+floor	_	_	O
+space	_	_	O
+is	_	_	O
+available	_	_	B-CONST_DIR
 .	_	_	O
 The	_	_	O
-net	_	_	O
-profit	_	_	B-OBJ_NAME
-is	_	_	O
-$	_	_	O
-2000	_	_	B-PARAM
-for	_	_	O
-each	_	_	O
-ring	_	_	B-VAR
-layout	_	_	I-VAR
+store	_	_	O
+stocks	_	_	O
+only	_	_	O
+phones	_	_	B-VAR
+and	_	_	O
+laptops	_	_	B-VAR
+.	_	_	O
+Corporate	_	_	O
+has	_	_	O
+required	_	_	O
+that	_	_	O
+at	_	_	B-CONST_DIR
+least	_	_	I-CONST_DIR
+80	_	_	B-LIMIT
+%	_	_	I-LIMIT
+of	_	_	O
+all	_	_	O
+appliances	_	_	O
+in	_	_	O
+stock	_	_	O
+be	_	_	O
+laptops	_	_	B-VAR
+.	_	_	O
+Finally	_	_	O
 ,	_	_	O
+a	_	_	O
+phone	_	_	B-VAR
+costs	_	_	O
 $	_	_	O
-4000	_	_	B-PARAM
+400	_	_	B-PARAM
 for	_	_	O
-each	_	_	O
-tree	_	_	B-VAR
-layout	_	_	I-VAR
+the	_	_	O
+store	_	_	O
 ,	_	_	O
 and	_	_	O
+a	_	_	O
+laptop	_	_	B-VAR
+,	_	_	O
 $	_	_	O
-8000	_	_	B-PARAM
-for	_	_	O
-each	_	_	O
-mesh	_	_	B-VAR
-layout	_	_	I-VAR
+100	_	_	B-PARAM
 .	_	_	O
-How	_	_	O
-many	_	_	O
-layouts	_	_	O
-of	_	_	O
-each	_	_	O
-type	_	_	O
-should	_	_	O
+The	_	_	O
+store	_	_	O
+wants	_	_	O
+to	_	_	O
+spend	_	_	O
+at	_	_	B-CONST_DIR
+most	_	_	I-CONST_DIR
+$	_	_	O
+6000	_	_	B-LIMIT
+.	_	_	O
+Formulate	_	_	O
+an	_	_	O
+LP	_	_	O
+that	_	_	O
+can	_	_	O
 be	_	_	O
 used	_	_	O
 to	_	_	O
-yield	_	_	O
-maximum	_	_	B-OBJ_DIR
+maximize	_	_	B-OBJ_DIR
+the	_	_	O
+store	_	_	O
+'s	_	_	O
 profit	_	_	B-OBJ_NAME
-?	_	_	O
+.	_	_	O
  """
 
 
 # ========================================= Prompt construction ======================================
 
-example_text = """
-Cautious
-Asset
-Investment
-has
-a
-total
-of
-$
-150,000
-to
-manage
-and
-decides
-to
-invest
-it
-in
-money
-market
-fund
-,
-which
-yields
-a
-2
-%
-return
-as
-well
-as
-in
-foreign
-bonds
-,
-which
-gives
-and
-average
-rate
-of
-return
-of
-10.2
-%
-.
-Internal
-policies
-require
-PAI
-to
-diversify
-the
-asset
-allocation
-so
-that
-the
-minimum
-investment
-in
-money
-market
-fund
-is
-40
-%
-of
-the
-total
-investment
-.
-Due
-to
-the
-risk
-of
-default
-of
-foreign
-countries
-,
-no
-more
-than
-40
-%
-of
-the
-total
-investment
-should
-be
-allocated
-to
-foreign
-bonds
-.
-How
-much
-should
-the
-Cautious
-Asset
-Investment
-allocate
-in
-each
-asset
-so
-as
-to
-maximize
-its
-average
-return
-?
-"""
+# the reply example in the prompt
 
 reply_text = """
 Cautious	_	_	O
@@ -421,244 +360,15 @@ return	_	_	I-OBJ_NAME
 ?	_	_	O
 """
 
-prompt_text = """
-John
-has
-a
-300
-acre
-berry
-farm
-on
-which
-to
-plant
-blueberries
-and
-raspberries
-.
-John
-has
-$
-10000
-to
-spend
-on
-watering
-and
-575
-days
-worth
-of
-labor
-available
-.
-For
-each
-acre
-of
-blueberries
-,
-6
-days
-worth
-of
-labor
-and
-$
-22
-in
-watering
-costs
-is
-required
-.
-For
-each
-acre
-of
-raspberries
-,
-3
-days
-worth
-of
-labor
-and
-$
-25
-in
-watering
-costs
-is
-required
-.
-The
-profit
-per
-acre
-of
-blueberries
-is
-$
-56
-and
-the
-profit
-per
-acre
-of
-raspberries
-is
-$
-75
-.
-Formulate
-an
-LP
-problem
-in
-order
-to
-maximize
-profit
-.
- """
+# the example unlabeled text for the one shot example (extracted from the labeled reply text above)
+example_text = extract_first_column(reply_text)
 
-prompt_text = """
-Nova
-Network
-wants
-to
-design
-a
-plan
-to
-bid
-for
-the
-job
-of
-providing
-a
-computer
-network
-for
-city
-offices
-.
-It
-can
-build
-three
-types
-of
-layouts
-using
-workstations
-,
-servers
-,
-and
-switches
-.
-It
-has
-2000
-workstations
-,
-500
-servers
-,
-and
-300
-switches
-.
-A
-ring
-layout
-uses
-50
-workstations
-,
-20
-servers
-,
-and
-10
-switches
-;
-a
-tree
-layout
-uses
-30
-workstations
-,
-15
-servers
-,
-and
-7
-switches
-;
-and
-a
-mesh
-layout
-uses
-100
-workstations
-,
-50
-servers
-,
-and
-30
-switches
-.
-The
-net
-profit
-is
-$
-2000
-for
-each
-ring
-layout
-,
-$
-4000
-for
-each
-tree
-layout
-,
-and
-$
-8000
-for
-each
-mesh
-layout
-.
-How
-many
-layouts
-of
-each
-type
-should
-be
-used
-to
-yield
-maximum
-profit
-?
- """
 
+# the text to be labeled by the LLM (extracted from the labeled text1 above)
+prompt_text = extract_first_column(text1)
+
+
+# the prompt where all the strings above are used
 context_text = f"""
 ## USER: the following text is an example of a text description of a problem that requires optimization your role is to classify each word should be classified into one of the following: (general word refered to using the label 'O' , optimization_problem_constraint_description refered to using the label 'B/I-CONST_DIR', numerical_limit refered to using the label 'B/I-LIMIT',variable refered to using the label 'B/I-VAR', measurable_parameter refered to using the label 'B/I PARAM', objective refered to using the label 'B/I-OBJ_NAME' , action_towards_objective refered to using the label 'B-OBJ_DIR') answer in the format 'word _ _ classification label' for each word in the provided text
 ## provided text:
@@ -680,7 +390,7 @@ response = model.generate_content(
     generation_config=genai.types.GenerationConfig(
         # Only one candidate for now.
         candidate_count=1,
-        temperature=1.0,
+        temperature=1.5,
         top_p= 0.95,
         top_k= 1,
         max_output_tokens=2048
@@ -689,9 +399,152 @@ response = model.generate_content(
 print(response.text)
 
 
-result = compare_columns_with_missing_rows(text1, str(response.text))
-
+# result = compare_columns_with_missing_rows(text1=text1, text2=str(response.text)) # uncomment to check the results without ignoring the position of the rows
+result = compare_columns_ignore_position(text1=text1, text2=str(response.text))
 print(f"Match Percentage: {result['match_percentage']:.2f}%")
-print(f"Non-Matching Rows: {result['non_matching_rows']}")
 print(f"Missing in Text1: {result['missing_in_text1']}")
 print(f"Missing in Text2: {result['missing_in_text2']}")
+# print(f"Non-Matching Rows: {result['non_matching_rows']}") # uncomment in case of using the comparison function which doesn't ignore the positions of the rows
+
+
+
+# ========================================================   this area is for testing purposes ===========================================
+
+# a randomized prompt to check if order of the words affect model accuracy
+
+
+# randomized_prompt_text = """
+# Corporate
+# has
+# required
+# that
+# at
+# least
+# 80
+# %
+# of
+# all
+# appliances
+# in
+# stock
+# be
+# laptops
+# .
+# The
+# store
+# stocks
+# only
+# phones
+# and
+# laptops
+# .
+# A
+# phone
+# requires
+# 1
+# sq
+# ft
+# of
+# floor
+# space
+# ,
+# whereas
+# a
+# laptop
+# requires
+# 4
+# sq
+# ft
+# .
+# In
+# total
+# ,
+# 400
+# sq
+# ft
+# of
+# floor
+# space
+# is
+# available
+# .
+# A
+# phone
+# will
+# earn
+# the
+# store
+# $
+# 120
+# in
+# profits
+# ,
+# and
+# a
+# laptop
+# will
+# earn
+# $
+# 40
+# .
+# Finally
+# ,
+# a
+# phone
+# costs
+# $
+# 400
+# for
+# the
+# store
+# ,
+# and
+# a
+# laptop
+# ,
+# $
+# 100
+# .
+# The
+# store
+# wants
+# to
+# spend
+# at
+# most
+# $
+# 6000
+# .
+# An
+# electronics
+# store
+# wants
+# to
+# optimize
+# how
+# many
+# phones
+# and
+# laptops
+# are
+# enough
+# to
+# keep
+# in
+# inventory
+# .
+# Formulate
+# an
+# LP
+# that
+# can
+# be
+# used
+# to
+# maximize
+# the
+# store
+# 's
+# profit
+# .
+#  """
